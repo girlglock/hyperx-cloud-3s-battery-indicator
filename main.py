@@ -17,44 +17,58 @@ VID = 0x03F0
 PID = 0x06BE
 REPORT_ID = 0x0C
 CMD_BATTERY = 0x06
-QUERY_INTERVAL = 300 # 300s is 5m
+QUERY_INTERVAL = 300
 
 battery_percent = 0
+last_battery_percent = -1
 icon = None
 
 def get_battery_icon(percent):
     match percent:
         case p if p >= 90:
-            return Image.open(os.path.join(ASSETS_PATH, "100.png"))
+            icon_path = os.path.join(ASSETS_PATH, "100.png")
         case p if p >= 80:
-            return Image.open(os.path.join(ASSETS_PATH, "90.png"))
+            icon_path = os.path.join(ASSETS_PATH, "90.png")
         case p if p >= 70:
-            return Image.open(os.path.join(ASSETS_PATH, "80.png"))
+            icon_path = os.path.join(ASSETS_PATH, "80.png")
         case p if p >= 60:
-            return Image.open(os.path.join(ASSETS_PATH, "70.png"))
+            icon_path = os.path.join(ASSETS_PATH, "70.png")
         case p if p >= 50:
-            return Image.open(os.path.join(ASSETS_PATH, "60.png"))
+            icon_path = os.path.join(ASSETS_PATH, "60.png")
         case p if p >= 40:
-            return Image.open(os.path.join(ASSETS_PATH, "50.png"))
+            icon_path = os.path.join(ASSETS_PATH, "50.png")
         case p if p >= 30:
-            return Image.open(os.path.join(ASSETS_PATH, "40.png"))
+            icon_path = os.path.join(ASSETS_PATH, "40.png")
         case p if p >= 20:
-            return Image.open(os.path.join(ASSETS_PATH, "30.png"))
+            icon_path = os.path.join(ASSETS_PATH, "30.png")
         case p if p >= 10:
-            return Image.open(os.path.join(ASSETS_PATH, "20.png"))
+            icon_path = os.path.join(ASSETS_PATH, "20.png")
         case _:
-            return Image.open(os.path.join(ASSETS_PATH, "10.png"))
+            icon_path = os.path.join(ASSETS_PATH, "10.png")
+    
+    img = Image.open(icon_path)
+    return img.copy()
 
-def query_battery(device):
-    req = [REPORT_ID, 0x02, 0x03, 0x01, 0x00, CMD_BATTERY, 0x00] + [0] * 57
-    device.write(req)
-    time.sleep(0.1)
-    data = device.read(64, timeout_ms=1000)
-    if data and len(data) >= 7:
-        if data[0] == REPORT_ID and data[5] == CMD_BATTERY:
-            return data[6]
-        if data[0] == 0x02 and data[4] == CMD_BATTERY:
-            return data[5]
+def query_battery(device_path):
+    try:
+        device = hid.device()
+        device.open_path(device_path)
+        
+        req = [REPORT_ID, 0x02, 0x03, 0x01, 0x00, CMD_BATTERY, 0x00] + [0] * 57
+        device.write(req)
+        time.sleep(0.1)
+        data = device.read(64, timeout_ms=1000)
+        
+        device.close()
+        
+        if data and len(data) >= 7:
+            if data[0] == REPORT_ID and data[5] == CMD_BATTERY:
+                return data[6]
+            if data[0] == 0x02 and data[4] == CMD_BATTERY:
+                return data[5]
+    except Exception as e:
+        icon.title = f"error: {e}"
+    
     return None
 
 def find_working_device():
@@ -77,31 +91,26 @@ def find_working_device():
     return None
 
 def battery_loop():
-    global battery_percent, icon
+    global battery_percent, last_battery_percent, icon
     try:
         working_path = find_working_device()
         if not working_path:
             if icon:
                 icon.title = "headset not found :c"
-                icon.update_menu()
             return
-        
-        device = hid.device()
-        device.open_path(working_path)
-        
+
         while True:
-            pct = query_battery(device)
+            pct = query_battery(working_path)
             if pct is not None:
                 battery_percent = pct
-                if icon:
+                if battery_percent != last_battery_percent and icon:
                     icon.icon = get_battery_icon(battery_percent)
                     icon.title = f"hyperx cloud III s\nbattery: {battery_percent}%"
-                    icon.update_menu()
+                    last_battery_percent = battery_percent
             time.sleep(QUERY_INTERVAL)
     except Exception as e:
         if icon:
             icon.title = f"error: {e}"
-            icon.update_menu()
 
 def on_quit(icon, item):
     icon.stop()
