@@ -83,6 +83,7 @@ def battery_loop():
         if not working_path:
             if icon:
                 icon.title = "headset not found :c"
+                icon.update_menu()
             return
         
         device = hid.device()
@@ -95,10 +96,12 @@ def battery_loop():
                 if icon:
                     icon.icon = get_battery_icon(battery_percent)
                     icon.title = f"hyperx cloud III s\nbattery: {battery_percent}%"
+                    icon.update_menu()
             time.sleep(QUERY_INTERVAL)
     except Exception as e:
         if icon:
             icon.title = f"error: {e}"
+            icon.update_menu()
 
 def on_quit(icon, item):
     icon.stop()
