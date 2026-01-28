@@ -1,0 +1,4 @@
+pystray
+pillow
+hidapi
+pyinstaller
