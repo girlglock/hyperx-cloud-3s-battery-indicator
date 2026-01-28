@@ -31,7 +31,7 @@ jobs:
     
     - name: build exe
       run: |
-        pyinstaller --onefile --windowed --icon=assets/100.png --add-data "assets;assets" --hidden-import=pystray --hidden-import=PIL --hidden-import=hid --name "hyperx-cloud3s-battery-tray" main.py
+        pyinstaller --onefile --windowed --icon=assets/100.ico --add-data "assets;assets" --hidden-import=pystray --hidden-import=PIL --hidden-import=hid --name "hyperx-cloud3s-battery-tray" main.py
     
     - name: make release
       uses: softprops/action-gh-release@v2
