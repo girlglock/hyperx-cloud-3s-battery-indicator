@@ -1,4 +1,0 @@
-pystray
-pillow
-hidapi
-pyinstaller
